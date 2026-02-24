@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Inventory Cabang</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
+    <style>
+        /* Mencegah scroll yang tidak disengaja bergaya web */
+        body { overscroll-behavior-y: contain; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen w-screen overflow-hidden flex flex-col">
+
+    <div id="login-screen" class="flex-1 flex flex-col justify-center items-center p-6">
+        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
+            <h1 class="text-2xl font-bold text-center mb-6">Login App</h1>
+            <input type="text" id="username" placeholder="Username" class="w-full mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="password" id="password" placeholder="Password" class="w-full mb-6 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button onclick="login()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold">Masuk</button>
+        </div>
+    </div>
+
+    <div id="main-app" class="hidden flex-1 flex flex-col h-full">
+        <header class="bg-blue-600 text-white p-4 text-center font-bold text-lg shadow-md">
+            Inventory System
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4" id="content-area">
+            <h2 class="text-xl font-bold mb-4">Dashboard</h2>
+            <input type="text" placeholder="Cari produk (kata depan/belakang)..." class="w-full p-3 border rounded-lg mb-4">
+        </main>
+
+        <nav class="bg-white border-t flex justify-around p-3 shadow-lg pb-safe">
+            <button onclick="switchTab('inventory')" class="flex flex-col items-center text-gray-500 hover:text-blue-600">
+                <span>📦</span>
+                <span class="text-xs mt-1">Inventory</span>
+            </button>
+            <button onclick="switchTab('counting')" class="flex flex-col items-center text-gray-500 hover:text-blue-600">
+                <span>📷</span>
+                <span class="text-xs mt-1">Counting</span>
+            </button>
+            <button onclick="switchTab('settings')" class="flex flex-col items-center text-gray-500 hover:text-blue-600">
+                <span>⚙️</span>
+                <span class="text-xs mt-1">Setting</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        const API_URL = 'MASUKKAN_URL_WEB_APP_APPS_SCRIPT_DI_SINI';
+
+        // Fungsi Login Sederhana
+        async function login() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            
+            // Contoh request POST ke Google Apps Script (Fetch API)
+            /* const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'login', username: user, password: pass })
+            });
+            const result = await response.json(); 
+            */
+            
+            // Simulasi sukses untuk demo
+            if(user && pass) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+            } else {
+                alert('Isi username & password!');
+            }
+        }
+
+        // Fungsi navigasi bawah
+        function switchTab(tab) {
+            const content = document.getElementById('content-area');
+            if (tab === 'inventory') {
+                content.innerHTML = '<h2 class="text-xl font-bold">Menu Inventory</h2><p>Tabel, histori, dan tombol ekspor/impor ada di sini.</p>';
+            } else if (tab === 'counting') {
+                content.innerHTML = `
+                    <h2 class="text-xl font-bold mb-4">Counting & Scan</h2>
+                    <div id="reader" width="100%" class="bg-gray-200 h-64 rounded-lg flex items-center justify-center mb-4">Kamera Scanner</div>
+                    <button onclick="startScanner()" class="w-full bg-green-500 text-white p-3 rounded-lg">Mulai Scan Barcode</button>
+                `;
+            } else if (tab === 'settings') {
+                content.innerHTML = '<h2 class="text-xl font-bold">Pengaturan</h2><p>Ganti password & atur cabang.</p>';
+            }
+        }
+
+        // Setup dasar kamera scanner menggunakan HTML5-QRCode
+        function startScanner() {
+            const html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" }, // Pakai kamera belakang HP
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText, decodedResult) => {
+                    alert(`Barcode Ditemukan: ${decodedText}`);
+                    html5QrCode.stop(); // Stop setelah berhasil scan
+                    // TODO: Tembak hasil scan ke fungsi pencarian/counting
+                },
+                (errorMessage) => {
+                    // Kamera mencari barcode (diabaikan saja log-nya agar tidak spam)
+                }
+            ).catch((err) => {
+                alert("Gagal mengakses kamera. Pastikan ada izin kamera.");
+            });
+        }
+    </script>
+</body>
+</html>
