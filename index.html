@@ -52,65 +52,105 @@
         </nav>
     </div>
 
-    <script>
-        const API_URL = 'MASUKKAN_URL_WEB_APP_APPS_SCRIPT_DI_SINI';
+   <script>
+    // MASUKKAN URL WEB APP DARI APPS SCRIPT DI SINI
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzcBUCoFGpN9kcE7fNRY-atKAN-bvkcnu-I8eUAIhB8E1G_yD1ApRdG1vgwsRLMYlh1/exec'; 
 
-        // Fungsi Login Sederhana
-        async function login() {
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
-            
-            // Contoh request POST ke Google Apps Script (Fetch API)
-            /* const response = await fetch(API_URL, {
+    // 1. FUNGSI LOGIN
+    async function login() {
+        const user = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
+        const loginBtn = document.querySelector('button[onclick="login()"]');
+        
+        if (!user || !pass) {
+            alert('Isi username dan password!');
+            return;
+        }
+
+        // Ubah teks tombol jadi loading
+        loginBtn.innerText = "Loading...";
+        loginBtn.disabled = true;
+
+        try {
+            // Mengirim data ke Google Sheets via POST
+            const response = await fetch(API_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'login', username: user, password: pass })
+                body: JSON.stringify({ 
+                    action: 'login', 
+                    username: user, 
+                    password: pass 
+                })
             });
-            const result = await response.json(); 
-            */
             
-            // Simulasi sukses untuk demo
-            if(user && pass) {
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                alert(`Selamat datang, ${user} (${result.role})`);
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
+                
+                // Jika login sukses, otomatis ambil data inventory
+                fetchInventory(); 
             } else {
-                alert('Isi username & password!');
+                alert(result.message);
             }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Gagal terhubung ke server.');
+        } finally {
+            // Kembalikan tombol seperti semula
+            loginBtn.innerText = "Masuk";
+            loginBtn.disabled = false;
         }
+    }
 
-        // Fungsi navigasi bawah
-        function switchTab(tab) {
-            const content = document.getElementById('content-area');
-            if (tab === 'inventory') {
-                content.innerHTML = '<h2 class="text-xl font-bold">Menu Inventory</h2><p>Tabel, histori, dan tombol ekspor/impor ada di sini.</p>';
-            } else if (tab === 'counting') {
-                content.innerHTML = `
-                    <h2 class="text-xl font-bold mb-4">Counting & Scan</h2>
-                    <div id="reader" width="100%" class="bg-gray-200 h-64 rounded-lg flex items-center justify-center mb-4">Kamera Scanner</div>
-                    <button onclick="startScanner()" class="w-full bg-green-500 text-white p-3 rounded-lg">Mulai Scan Barcode</button>
-                `;
-            } else if (tab === 'settings') {
-                content.innerHTML = '<h2 class="text-xl font-bold">Pengaturan</h2><p>Ganti password & atur cabang.</p>';
-            }
-        }
+    // 2. FUNGSI MENGAMBIL DATA INVENTORY
+    async function fetchInventory() {
+        const contentArea = document.getElementById('content-area');
+        contentArea.innerHTML = '<p class="text-center mt-10">Memuat data dari Google Sheets...</p>';
 
-        // Setup dasar kamera scanner menggunakan HTML5-QRCode
-        function startScanner() {
-            const html5QrCode = new Html5Qrcode("reader");
-            html5QrCode.start(
-                { facingMode: "environment" }, // Pakai kamera belakang HP
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                (decodedText, decodedResult) => {
-                    alert(`Barcode Ditemukan: ${decodedText}`);
-                    html5QrCode.stop(); // Stop setelah berhasil scan
-                    // TODO: Tembak hasil scan ke fungsi pencarian/counting
-                },
-                (errorMessage) => {
-                    // Kamera mencari barcode (diabaikan saja log-nya agar tidak spam)
-                }
-            ).catch((err) => {
-                alert("Gagal mengakses kamera. Pastikan ada izin kamera.");
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'getInventory' })
             });
+            
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                const data = result.data;
+                // Render data ke dalam HTML
+                let html = '<h2 class="text-xl font-bold mb-4">Daftar Inventory</h2>';
+                html += '<input type="text" placeholder="Cari produk..." class="w-full p-3 border rounded-lg mb-4">';
+                
+                data.forEach(item => {
+                    html += `
+                        <div class="bg-white p-4 rounded-lg shadow mb-3 border-l-4 border-blue-500">
+                            <h3 class="font-bold text-lg">${item.NamaBarang}</h3>
+                            <p class="text-sm text-gray-600">Kode: ${item.KodeBarang} | Cabang: ${item.Cabang}</p>
+                            <p class="text-sm font-semibold text-green-600 mt-1">Stok: ${item.Stok}</p>
+                        </div>
+                    `;
+                });
+                contentArea.innerHTML = html;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            contentArea.innerHTML = '<p class="text-red-500">Gagal memuat data.</p>';
         }
-    </script>
+    }
+
+    // Fungsi navigasi bawah (sama seperti sebelumnya)
+    function switchTab(tab) {
+        const content = document.getElementById('content-area');
+        if (tab === 'inventory') {
+            fetchInventory(); // Panggil data baru saat tab ditekan
+        } else if (tab === 'counting') {
+            content.innerHTML = '<h2 class="text-xl font-bold">Menu Counting</h2><p>Fitur scanner barcode belum diaktifkan.</p>';
+        } else if (tab === 'settings') {
+            content.innerHTML = '<h2 class="text-xl font-bold">Pengaturan</h2><p>Pengaturan User.</p>';
+        }
+    }
+</script>
 </body>
 </html>
