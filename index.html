@@ -1,80 +1,23 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>App Inventory Cabang</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    
-    <style>
-        body { overscroll-behavior-y: contain; }
-        .hidden { display: none !important; }
-        .pb-safe { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
-    </style>
-</head>
-<body class="bg-gray-100 h-[100dvh] w-screen overflow-hidden flex flex-col">
-
-    <div id="login-screen" class="flex-1 flex flex-col justify-center items-center p-6">
-        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
-            <h1 class="text-2xl font-bold text-center mb-6 text-blue-600">Login App</h1>
-            <input type="text" id="username" placeholder="Username" class="w-full mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <input type="password" id="password" placeholder="Password" class="w-full mb-6 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button onclick="login()" class="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700 transition">Masuk</button>
-        </div>
-    </div>
-
-    <div id="main-app" class="hidden flex-1 flex flex-col h-full">
-        <header class="bg-blue-600 text-white p-4 text-center font-bold text-lg shadow-md flex justify-between items-center">
-            <span>Inventory System</span>
-            <button onclick="logout()" class="text-sm bg-blue-500 px-2 py-1 rounded">Logout</button>
-        </header>
-
-        <main class="flex-1 overflow-y-auto p-4" id="content-area">
-        </main>
-
-        <nav class="bg-white border-t flex justify-around p-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] pb-safe z-50">
-            <button onclick="switchTab('home')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600">
-                <span class="text-xl">🏠</span>
-                <span class="text-xs mt-1 font-medium">Utama</span>
-            </button>
-            <button onclick="switchTab('inventory')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600">
-                <span class="text-xl">📦</span>
-                <span class="text-xs mt-1 font-medium">Inventory</span>
-            </button>
-            <button onclick="switchTab('counting')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600">
-                <span class="text-xl">📷</span>
-                <span class="text-xs mt-1 font-medium">Counting</span>
-            </button>
-            <button onclick="switchTab('settings')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600">
-                <span class="text-xl">⚙️</span>
-                <span class="text-xs mt-1 font-medium">Setting</span>
-            </button>
-        </nav>
-    </div>
-
-   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzcBUCoFGpN9kcE7fNRY-atKAN-bvkcnu-I8eUAIhB8E1G_yD1ApRdG1vgwsRLMYlh1/exec';
+<script>
+    // MASUKKAN URL WEB APP ANDA DI SINI
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzcBUCoFGpN9kcE7fNRY-atKAN-bvkcnu-I8eUAIhB8E1G_yD1ApRdG1vgwsRLMYlh1/exec'; 
 
     let currentUser = '';
+    let inventoryCache = []; // Untuk mencari barang secara instan tanpa loading lama
+    let countingList = [];   // Keranjang sementara data yang sedang di-scan
+    let html5QrCode = null;  // Objek Kamera
 
+    // --- 1. LOGIN & NAVIGASI (Sama seperti sebelumnya) ---
     async function login() {
         const user = document.getElementById('username').value;
         const pass = document.getElementById('password').value;
         const loginBtn = document.querySelector('button[onclick="login()"]');
         
         if (!user || !pass) { alert('Isi username dan password!'); return; }
-
-        loginBtn.innerText = "Loading...";
-        loginBtn.disabled = true;
+        loginBtn.innerText = "Loading..."; loginBtn.disabled = true;
 
         try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'login', username: user, password: pass })
-            });
+            const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'login', username: user, password: pass }) });
             const result = await response.json();
 
             if (result.status === 'success') {
@@ -82,136 +25,247 @@
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
                 switchTab('home'); 
-            } else {
-                alert(result.message);
-            }
-        } catch (error) {
-            alert('Gagal terhubung ke server. Pastikan internet aktif.');
-            console.error(error);
-        } finally {
-            loginBtn.innerText = "Masuk";
-            loginBtn.disabled = false;
-        }
+                loadInventoryCache(); // Tarik data awal diam-diam di belakang layar
+            } else { alert(result.message); }
+        } catch (error) { alert('Gagal terhubung ke server.'); } 
+        finally { loginBtn.innerText = "Masuk"; loginBtn.disabled = false; }
     }
 
-    function logout() {
-        document.getElementById('username').value = '';
-        document.getElementById('password').value = '';
-        document.getElementById('main-app').classList.add('hidden');
-        document.getElementById('login-screen').classList.remove('hidden');
-    }
+    function logout() { location.reload(); } // Refresh halaman utuk logout mudah
 
     function switchTab(tab) {
         const content = document.getElementById('content-area');
         
+        // Matikan kamera jika pindah tab dari counting
+        if (html5QrCode && html5QrCode.isScanning) { html5QrCode.stop(); }
+
         if (tab === 'home') {
             content.innerHTML = `
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">Halo, ${currentUser}! 👋</h2>
                     <p class="text-gray-500">Selamat datang di Menu Utama.</p>
                 </div>
-                
                 <div class="grid grid-cols-2 gap-4">
-                    <div onclick="switchTab('inventory')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center cursor-pointer active:bg-gray-50">
-                        <span class="text-4xl mb-3">📦</span>
-                        <span class="font-bold text-gray-700">Data Inventory</span>
+                    <div onclick="switchTab('inventory')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center cursor-pointer">
+                        <span class="text-4xl mb-3">📦</span><span class="font-bold text-gray-700">Data Inventory</span>
                     </div>
-                    <div onclick="switchTab('counting')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center cursor-pointer active:bg-gray-50">
-                        <span class="text-4xl mb-3">📷</span>
-                        <span class="font-bold text-gray-700">Scan Barcode</span>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center cursor-pointer active:bg-gray-50">
-                        <span class="text-4xl mb-3">📥</span>
-                        <span class="font-bold text-gray-700 text-center">Import / Export</span>
-                    </div>
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center cursor-pointer active:bg-gray-50">
-                        <span class="text-4xl mb-3">📜</span>
-                        <span class="font-bold text-gray-700 text-center">Histori</span>
+                    <div onclick="switchTab('counting')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center cursor-pointer">
+                        <span class="text-4xl mb-3">📷</span><span class="font-bold text-gray-700 text-center">Counting & Scan</span>
                     </div>
                 </div>
             `;
         } 
         else if (tab === 'inventory') {
-            fetchInventory();
+            content.innerHTML = '<div class="flex justify-center mt-20"><p class="text-blue-600 font-bold animate-pulse">Memuat data inventory...</p></div>';
+            loadInventoryCache().then(() => {
+                // Tampilkan data setelah cache di-update
+                let html = '<h2 class="text-xl font-bold mb-4">Daftar Inventory</h2>';
+                inventoryCache.forEach(item => {
+                    html += `
+                        <div class="bg-white p-4 rounded-xl shadow-sm mb-3 border-l-4 border-blue-500 flex justify-between items-center">
+                            <div><h3 class="font-bold text-gray-800">${item.NamaBarang}</h3><p class="text-xs text-gray-500">Kode: ${item.KodeBarang}</p></div>
+                            <div class="text-right"><p class="text-lg font-bold text-green-600">${item.Stok}</p></div>
+                        </div>`;
+                });
+                content.innerHTML = html;
+            });
         } 
+        // ---- 2. MENU COUNTING (UI BARU) ----
         else if (tab === 'counting') {
+            if(inventoryCache.length === 0) loadInventoryCache(); // Pastikan data siap
+
             content.innerHTML = `
-                <h2 class="text-xl font-bold mb-4">Counting & Scanner</h2>
-                <div class="bg-white p-4 rounded-xl shadow-sm">
-                    <div id="reader" class="bg-gray-200 h-64 rounded-lg flex flex-col items-center justify-center mb-4 text-gray-500">
+                <h2 class="text-xl font-bold mb-4">Counting / Stock Opname</h2>
+                
+                <div class="bg-white p-4 rounded-xl shadow-sm mb-4">
+                    <div id="reader" class="bg-gray-200 rounded-lg flex flex-col items-center justify-center mb-4 text-gray-500 overflow-hidden" style="min-height: 200px">
                         <span>📷 Area Kamera</span>
                     </div>
-                    <button onclick="startScanner()" class="w-full bg-green-500 text-white p-3 rounded-lg font-bold">Mulai Scan</button>
-                    <div class="mt-4">
-                        <p class="text-sm text-gray-500 mb-2">Atau ketik manual:</p>
-                        <div class="flex gap-2">
-                            <input type="text" placeholder="Masukkan Barcode..." class="flex-1 p-2 border rounded-lg focus:outline-none">
-                            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg">Cari</button>
+                    <button id="btn-scan" onclick="toggleScanner()" class="w-full bg-green-500 text-white p-3 rounded-lg font-bold mb-4 shadow">Mulai Scan Kamera</button>
+                    
+                    <p class="text-sm text-gray-500 mb-2">Atau cari manual (Kode/Nama Barang):</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="manual-code" placeholder="Ketik kode..." class="flex-1 p-3 border rounded-lg focus:outline-none">
+                        <button onclick="searchManual()" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold shadow">Cari</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm mb-16 border-t-4 border-yellow-400">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-lg">Daftar Sedang Dihitung</h3>
+                        <span id="count-total" class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">0 Item</span>
+                    </div>
+                    
+                    <div id="counting-list" class="space-y-3 mb-6">
+                        <p class="text-center text-gray-400 text-sm py-4">Belum ada barang di-scan.</p>
+                    </div>
+
+                    <div class="border-t pt-4 space-y-3">
+                        <button onclick="downloadExcel()" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold flex justify-center items-center gap-2">
+                            <span>📥</span> Download Excel
+                        </button>
+                        <button onclick="saveFinal()" class="w-full bg-blue-700 text-white p-3 rounded-lg font-bold flex justify-center items-center gap-2 shadow-lg">
+                            <span>💾</span> Simpan Final ke Database
+                        </button>
+                    </div>
+                </div>
+            `;
+            renderCountingList();
+        } 
+        else if (tab === 'settings') {
+            content.innerHTML = `<h2 class="text-xl font-bold mb-4">Pengaturan</h2><button onclick="logout()" class="w-full bg-red-500 text-white p-3 rounded-lg font-bold mt-4">Keluar</button>`;
+        }
+    }
+
+    // --- 3. LOGIKA COUNTING ---
+
+    // Mengambil data inventory ke memory HP agar scan tidak lemot
+    async function loadInventoryCache() {
+        try {
+            const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getInventory' }) });
+            const result = await response.json();
+            if (result.status === 'success') inventoryCache = result.data;
+        } catch (e) { console.error("Gagal load cache"); }
+    }
+
+    // Fungsi Kamera Scanner
+    function toggleScanner() {
+        const btn = document.getElementById('btn-scan');
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+                btn.innerText = "Mulai Scan Kamera";
+                btn.classList.replace('bg-red-500', 'bg-green-500');
+            });
+        } else {
+            if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText) => {
+                    processScannedCode(decodedText);
+                    // Bip suara kecil jika scan berhasil (opsional)
+                    if("vibrate" in navigator) navigator.vibrate(200);
+                },
+                (err) => { /* Abaikan error pencarian frame kosong */ }
+            ).then(() => {
+                btn.innerText = "Berhenti Scan";
+                btn.classList.replace('bg-green-500', 'bg-red-500');
+            }).catch(err => alert("Gagal buka kamera. Izinkan akses kamera browser."));
+        }
+    }
+
+    function searchManual() {
+        const input = document.getElementById('manual-code');
+        if(input.value) processScannedCode(input.value.trim());
+        input.value = ''; // Kosongkan input setelah dicari
+    }
+
+    // Memproses kode yang di-scan atau diketik
+    function processScannedCode(kode) {
+        const item = inventoryCache.find(i => i.KodeBarang == kode || i.NamaBarang.toLowerCase().includes(kode.toLowerCase()));
+        
+        if (!item) {
+            alert(`Barang "${kode}" tidak ditemukan di database.`);
+            return;
+        }
+
+        // Cek apakah sudah masuk keranjang, jika ya, cukup highlight/alert
+        const isExist = countingList.find(i => i.KodeBarang == item.KodeBarang);
+        if (isExist) {
+            alert("Barang ini sudah ada di daftar hitung di bawah!");
+            return;
+        }
+
+        // Masukkan ke urutan PERTAMA (unshift)
+        countingList.unshift({
+            KodeBarang: item.KodeBarang,
+            NamaBarang: item.NamaBarang,
+            StokSistem: item.Stok,
+            StokAktual: item.Stok // Default isi sama dengan stok sistem
+        });
+        renderCountingList();
+    }
+
+    // Menampilkan HTML Keranjang Counting
+    function renderCountingList() {
+        const container = document.getElementById('counting-list');
+        document.getElementById('count-total').innerText = `${countingList.length} Item`;
+
+        if(countingList.length === 0) {
+            container.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">Belum ada barang di-scan.</p>';
+            return;
+        }
+
+        let html = '';
+        countingList.forEach((item, index) => {
+            html += `
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 relative">
+                    <button onclick="removeItem(${index})" class="absolute top-2 right-2 text-red-500 font-bold bg-red-100 rounded-full w-6 h-6 flex justify-center items-center text-xs">X</button>
+                    <div class="pr-8">
+                        <p class="font-bold text-sm text-gray-800">${index + 1}. ${item.NamaBarang}</p>
+                        <p class="text-[10px] text-gray-500 mb-2">Kode: ${item.KodeBarang}</p>
+                    </div>
+                    <div class="flex justify-between items-center bg-white p-2 border rounded border-gray-100">
+                        <div class="text-xs">Stok Sistem: <span class="font-bold text-gray-700">${item.StokSistem}</span></div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-blue-600">Aktual:</span>
+                            <input type="number" onchange="updateQty(${index}, this.value)" value="${item.StokAktual}" class="w-16 p-1 border-2 border-blue-400 rounded text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-600">
                         </div>
                     </div>
                 </div>
             `;
-        } 
-        else if (tab === 'settings') {
-            content.innerHTML = `
-                <h2 class="text-xl font-bold mb-4">Pengaturan</h2>
-                <div class="bg-white p-4 rounded-xl shadow-sm">
-                    <p class="mb-2">Akun: <strong>${currentUser}</strong></p>
-                    <button onclick="logout()" class="w-full bg-red-500 text-white p-3 rounded-lg font-bold mt-4">Keluar dari Aplikasi</button>
-                </div>
-            `;
-        }
+        });
+        container.innerHTML = html;
     }
 
-    async function fetchInventory() {
-        const contentArea = document.getElementById('content-area');
-        contentArea.innerHTML = '<div class="flex justify-center mt-20"><p class="text-blue-600 font-bold animate-pulse">Memuat data...</p></div>';
+    function updateQty(index, newVal) {
+        countingList[index].StokAktual = Number(newVal);
+    }
+
+    function removeItem(index) {
+        countingList.splice(index, 1);
+        renderCountingList();
+    }
+
+    // --- 4. EXPORT & SIMPAN FINAL ---
+    function downloadExcel() {
+        if(countingList.length === 0) return alert("Belum ada data!");
+        
+        const dataToExport = countingList.map((item, i) => ({
+            "No": i + 1, "Kode Barang": item.KodeBarang, "Nama Barang": item.NamaBarang,
+            "Qty Sistem": item.StokSistem, "Qty Aktual (Hitungan)": item.StokAktual,
+            "Selisih": item.StokAktual - item.StokSistem, "Petugas": currentUser
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Hasil Counting");
+        XLSX.writeFile(wb, `Counting_${currentUser}_${new Date().toLocaleDateString('id-ID').replace(/\//g,'-')}.xlsx`);
+    }
+
+    async function saveFinal() {
+        if(countingList.length === 0) return alert("Belum ada data untuk disimpan!");
+        if(!confirm("Yakin simpan Final? Data stok di Sheet akan di-update.")) return;
+
+        const btn = document.querySelector('button[onclick="saveFinal()"]');
+        btn.innerHTML = "⏳ Sedang menyimpan..."; btn.disabled = true;
+
+        const payload = countingList.map(item => ({ kode: item.KodeBarang, qtyBaru: item.StokAktual, qtyLama: item.StokSistem }));
 
         try {
             const response = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'getInventory' })
+                method: 'POST', body: JSON.stringify({ action: 'updateCounting', user: currentUser, data: payload })
             });
             const result = await response.json();
-
-            if (result.status === 'success') {
-                const data = result.data;
-                let html = `
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">Daftar Inventory</h2>
-                        <button class="bg-blue-600 text-white text-sm px-3 py-1 rounded-lg">+ Tambah</button>
-                    </div>
-                    <input type="text" placeholder="🔍 Cari nama/kode produk..." class="w-full p-3 border rounded-lg mb-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                `;
-                
-                if (data.length === 0) {
-                    html += '<p class="text-center text-gray-500 mt-10">Data masih kosong.</p>';
-                } else {
-                    data.forEach(item => {
-                        html += `
-                            <div class="bg-white p-4 rounded-xl shadow-sm mb-3 border-l-4 border-blue-500 flex justify-between items-center">
-                                <div>
-                                    <h3 class="font-bold text-gray-800">${item.NamaBarang}</h3>
-                                    <p class="text-xs text-gray-500">Kode: ${item.KodeBarang} | Cabang: ${item.Cabang}</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-lg font-bold text-green-600">${item.Stok}</p>
-                                    <p class="text-[10px] text-gray-400">Stok</p>
-                                </div>
-                            </div>
-                        `;
-                    });
-                }
-                contentArea.innerHTML = html;
+            
+            if(result.status === 'success') {
+                alert("✅ " + result.message);
+                countingList = []; // Kosongkan keranjang
+                renderCountingList();
+                loadInventoryCache(); // Update cache lokal
+            } else {
+                alert("Gagal: " + result.message);
             }
-        } catch (error) {
-            contentArea.innerHTML = '<p class="text-red-500 text-center mt-10">Gagal memuat data dari Google Sheets.</p>';
-        }
+        } catch (e) { alert("Error koneksi!"); } 
+        finally { btn.innerHTML = "<span>💾</span> Simpan Final ke Database"; btn.disabled = false; }
     }
-
-    function startScanner() {
-        alert("Fitur kamera siap disambungkan ke Html5-Qrcode!");
-    }
-   </script>
-</body>
-</html>
+</script>
