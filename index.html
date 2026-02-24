@@ -10,7 +10,6 @@
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     
     <style>
-        /* Mencegah scroll layar bergaya web dan menyesuaikan area aman HP (seperti iPhone notch) */
         body { overscroll-behavior-y: contain; }
         .hidden { display: none !important; }
         .pb-safe { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
@@ -34,7 +33,7 @@
         </header>
 
         <main class="flex-1 overflow-y-auto p-4" id="content-area">
-            </main>
+        </main>
 
         <nav class="bg-white border-t flex justify-around p-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] pb-safe z-50">
             <button onclick="switchTab('home')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600">
@@ -57,12 +56,10 @@
     </div>
 
    <script>
-    // MASUKKAN URL WEB APP DARI APPS SCRIPT DI SINI
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzcBUCoFGpN9kcE7fNRY-atKAN-bvkcnu-I8eUAIhB8E1G_yD1ApRdG1vgwsRLMYlh1/exec'; 
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzcBUCoFGpN9kcE7fNRY-atKAN-bvkcnu-I8eUAIhB8E1G_yD1ApRdG1vgwsRLMYlh1/exec';
 
-    let currentUser = ''; // Menyimpan nama user yang sedang login
+    let currentUser = '';
 
-    // 1. FUNGSI LOGIN
     async function login() {
         const user = document.getElementById('username').value;
         const pass = document.getElementById('password').value;
@@ -81,24 +78,22 @@
             const result = await response.json();
 
             if (result.status === 'success') {
-                currentUser = user; // Simpan data user
+                currentUser = user;
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
-                
-                // PERUBAHAN: Setelah login, arahkan ke Menu Utama (Home), BUKAN langsung Inventory
                 switchTab('home'); 
             } else {
                 alert(result.message);
             }
         } catch (error) {
             alert('Gagal terhubung ke server. Pastikan internet aktif.');
+            console.error(error);
         } finally {
             loginBtn.innerText = "Masuk";
             loginBtn.disabled = false;
         }
     }
 
-    // Fungsi Logout
     function logout() {
         document.getElementById('username').value = '';
         document.getElementById('password').value = '';
@@ -106,12 +101,10 @@
         document.getElementById('login-screen').classList.remove('hidden');
     }
 
-    // 2. FUNGSI NAVIGASI BAWAH & RENDER KONTEN
     function switchTab(tab) {
         const content = document.getElementById('content-area');
         
         if (tab === 'home') {
-            // Tampilan Menu Utama (Dashboard)
             content.innerHTML = `
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">Halo, ${currentUser}! 👋</h2>
@@ -170,7 +163,6 @@
         }
     }
 
-    // 3. FUNGSI MENGAMBIL DATA INVENTORY
     async function fetchInventory() {
         const contentArea = document.getElementById('content-area');
         contentArea.innerHTML = '<div class="flex justify-center mt-20"><p class="text-blue-600 font-bold animate-pulse">Memuat data...</p></div>';
@@ -217,7 +209,6 @@
         }
     }
 
-    // FUNGSI SCANNER (Placeholder)
     function startScanner() {
         alert("Fitur kamera siap disambungkan ke Html5-Qrcode!");
     }
