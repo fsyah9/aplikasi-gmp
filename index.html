@@ -178,6 +178,7 @@
             } catch (e) { console.error("Gagal load cache"); }
         }
 
+        // UPDATE KOTAK SCANNER AGAR COCOK UNTUK BARCODE GARIS (1D)
         function toggleScanner() {
             const btn = document.getElementById('btn-scan');
             if (html5QrCode && html5QrCode.isScanning) {
@@ -188,7 +189,12 @@
             } else {
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 html5QrCode.start(
-                    { facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
+                    { facingMode: "environment" }, 
+                    { 
+                        fps: 10, 
+                        // KOTAK KITA UBAH JADI PERSEGI PANJANG (250x100) AGAR LEBIH FOKUS KE BARCODE GARIS
+                        qrbox: { width: 250, height: 100 } 
+                    },
                     (decodedText) => {
                         processScannedCode(decodedText);
                         if("vibrate" in navigator) navigator.vibrate(200);
@@ -207,11 +213,25 @@
             input.value = ''; 
         }
 
+        // UPDATE FUNGSI FILTER URL
         function processScannedCode(kode) {
+            // --- FITUR BARU: AUTO BERSIHKAN URL ---
+            // Jika hasil scan berupa URL (misal: https://toko.com/produk/BRG001)
+            if (kode.includes('http')) {
+                const urlParts = kode.split('/');
+                kode = urlParts[urlParts.length - 1]; // Ambil teks paling ujung (BRG001)
+                
+                // Jika ujungnya ada parameter seperti ?id=123, kita bersihkan juga
+                if(kode.includes('?')) {
+                    kode = kode.split('?')[0];
+                }
+            }
+            // --------------------------------------
+
             const item = inventoryCache.find(i => i.KodeBarang == kode || i.NamaBarang.toLowerCase().includes(kode.toLowerCase()));
             
             if (!item) {
-                alert(`Barang "${kode}" tidak ditemukan di database.`);
+                alert(`Barang dengan kode "${kode}" tidak ditemukan di database.`);
                 return;
             }
 
