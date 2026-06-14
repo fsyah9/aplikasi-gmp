@@ -13,11 +13,15 @@
         body { overscroll-behavior-y: contain; }
         .hidden { display: none !important; }
         .pb-safe { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+        
+        /* Modal Scroll */
+        .modal-body::-webkit-scrollbar { width: 5px; }
+        .modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-gray-100 h-[100dvh] w-screen overflow-hidden flex flex-col">
 
-    <div id="login-screen" class="flex-1 flex flex-col justify-center items-center p-6">
+    <div id="login-screen" class="flex-1 flex flex-col justify-center items-center p-6 z-50 relative bg-gray-100">
         <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
             <h1 class="text-2xl font-bold text-center mb-6 text-blue-600">Login App</h1>
             <input type="text" id="username" placeholder="Username" class="w-full mb-4 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -26,33 +30,105 @@
         </div>
     </div>
 
-    <div id="main-app" class="hidden flex-1 flex flex-col h-full">
-        <header class="bg-blue-600 text-white p-4 text-center font-bold text-lg shadow-md flex justify-between items-center">
-            <span>APP GMP INTERNAL</span>
-            <button onclick="logout()" class="text-sm bg-blue-500 px-2 py-1 rounded">Logout</button>
-        </header>
-
-        <main class="flex-1 overflow-y-auto p-4" id="content-area">
-        </main>
-
-        <nav class="bg-white border-t flex justify-around p-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] pb-safe z-50">
-            <button onclick="switchTab('home')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600">
-                <span class="text-xl">🏠</span>
-                <span class="text-xs mt-1 font-medium">Utama</span>
+    <div id="main-app" class="hidden flex-1 flex flex-col md:flex-row w-full h-full">
+        
+        <nav class="bg-white border-t md:border-t-0 md:border-r flex md:flex-col justify-around md:justify-start p-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-[4px_0_6px_-1px_rgba(0,0,0,0.1)] pb-safe md:pb-4 md:pt-4 z-40 order-last md:order-first w-full md:w-24 md:h-full gap-1 md:gap-4 shrink-0">
+            <button onclick="switchTab('home')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600 w-full rounded-lg hover:bg-blue-50">
+                <span class="text-2xl">🏠</span>
+                <span class="text-[10px] md:text-xs mt-1 font-medium text-center">Utama</span>
             </button>
-            <button onclick="switchTab('inventory')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600">
-                <span class="text-xl">📦</span>
-                <span class="text-xs mt-1 font-medium">Inventory</span>
+            <button onclick="switchTab('inventory')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600 w-full rounded-lg hover:bg-blue-50">
+                <span class="text-2xl">📦</span>
+                <span class="text-[10px] md:text-xs mt-1 font-medium text-center">Inventory</span>
             </button>
-            <button onclick="switchTab('counting')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600">
-                <span class="text-xl">📷</span>
-                <span class="text-xs mt-1 font-medium">Counting</span>
+            <button onclick="switchTab('counting')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600 w-full rounded-lg hover:bg-blue-50">
+                <span class="text-2xl">📷</span>
+                <span class="text-[10px] md:text-xs mt-1 font-medium text-center">Counting</span>
             </button>
-            <button onclick="switchTab('settings')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600">
-                <span class="text-xl">⚙️</span>
-                <span class="text-xs mt-1 font-medium">Setting</span>
+            <button onclick="switchTab('settings')" class="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 focus:text-blue-600 w-full rounded-lg hover:bg-blue-50 md:mt-auto">
+                <span class="text-2xl">⚙️</span>
+                <span class="text-[10px] md:text-xs mt-1 font-medium text-center">Setting</span>
             </button>
         </nav>
+
+        <div class="flex-1 flex flex-col h-full overflow-hidden relative">
+            <header class="bg-blue-600 text-white p-4 text-center font-bold text-lg shadow-md flex justify-between items-center shrink-0">
+                <span>APP GMP INTERNAL</span>
+                <button onclick="logout()" class="text-sm bg-blue-500 hover:bg-blue-700 px-3 py-1 rounded transition">Logout</button>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-4 bg-gray-50" id="content-area">
+                </main>
+        </div>
+    </div>
+
+    <div id="modal-inventory" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center bg-blue-50 rounded-t-xl">
+                <h3 id="modal-title" class="font-bold text-lg text-blue-800">Tambah Barang</h3>
+                <button onclick="closeModal('modal-inventory')" class="text-red-500 font-bold text-xl hover:text-red-700">&times;</button>
+            </div>
+            
+            <div class="p-4 overflow-y-auto modal-body flex-1 space-y-4">
+                <input type="hidden" id="inv-index">
+                
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Kode Barang</label>
+                    <input type="text" id="inv-kode" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Masukkan Kode">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Nama Barang</label>
+                    <input type="text" id="inv-nama" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Masukkan Nama">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Tahun Masuk</label>
+                        <input type="number" id="inv-tahun" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="YYYY">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Stok (Qty)</label>
+                        <input type="number" id="inv-stok" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="0">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Harga Masuk (Rp)</label>
+                    <input type="number" id="inv-harga" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Contoh: 50000">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Harga Penyusutan (Rp)</label>
+                    <input type="number" id="inv-penyusutan" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Contoh: 40000">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Foto Barang</label>
+                    <div onclick="document.getElementById('inv-foto-input').click()" class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:bg-gray-50 transition">
+                        <span class="text-3xl">📸</span>
+                        <p class="text-xs text-gray-500 mt-2 font-medium">Buka Kamera / Pilih Foto</p>
+                    </div>
+                    <input type="file" id="inv-foto-input" accept="image/*" capture="environment" class="hidden" onchange="previewImage(event)">
+                    <div id="preview-container" class="hidden mt-3 relative">
+                        <img id="inv-preview" class="w-full h-40 object-cover rounded-lg border shadow-sm">
+                        <button onclick="removeImage(event)" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center font-bold shadow hover:bg-red-600">&times;</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t bg-gray-50 rounded-b-xl flex gap-2">
+                <button onclick="closeModal('modal-inventory')" class="flex-1 bg-gray-300 text-gray-700 p-3 rounded-lg font-bold hover:bg-gray-400">Batal</button>
+                <button onclick="saveInventory()" class="flex-1 bg-blue-600 text-white p-3 rounded-lg font-bold shadow hover:bg-blue-700">💾 Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-view" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                <h3 class="font-bold text-lg text-gray-800">Detail Barang</h3>
+                <button onclick="closeModal('modal-view')" class="text-red-500 font-bold text-xl hover:text-red-700">&times;</button>
+            </div>
+            <div class="p-4" id="view-content">
+                </div>
+        </div>
     </div>
 
     <script>
@@ -63,6 +139,12 @@
         let inventoryCache = []; 
         let countingList = [];   
         let html5QrCode = null;  
+        let tempBase64Image = ''; // Menyimpan foto sementara
+
+        // Format Rupiah Helper
+        const formatRupiah = (angka) => {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka || 0);
+        };
 
         async function login() {
             const user = document.getElementById('username').value;
@@ -91,73 +173,68 @@
 
         function switchTab(tab) {
             const content = document.getElementById('content-area');
-            
-            if (html5QrCode && html5QrCode.isScanning) { html5QrCode.stop(); }
+            if (html5QrCode && html5QrCode.isScanning) { html5QrCode.stop().catch(e=>console.log(e)); }
 
             if (tab === 'home') {
                 content.innerHTML = `
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Halo, ${currentUser}! 👋</h2>
-                        <p class="text-gray-500">Selamat datang di Menu Utama.</p>
+                    <div class="mb-6 bg-blue-600 text-white p-6 rounded-2xl shadow-lg mt-2">
+                        <h2 class="text-2xl font-bold">Halo, ${currentUser}! 👋</h2>
+                        <p class="text-blue-100 mt-1">Selamat datang di Panel Utama App GMP.</p>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div onclick="switchTab('inventory')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center cursor-pointer">
-                            <span class="text-4xl mb-3">📦</span><span class="font-bold text-gray-700">Data Inventory</span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div onclick="switchTab('inventory')" class="bg-white p-6 rounded-xl shadow hover:shadow-md border border-gray-100 flex items-center cursor-pointer transition">
+                            <span class="text-5xl mr-4">📦</span>
+                            <div>
+                                <h3 class="font-bold text-gray-800 text-lg">Kelola Inventory</h3>
+                                <p class="text-sm text-gray-500">Lihat, Tambah & Edit Data</p>
+                            </div>
                         </div>
-                        <div onclick="switchTab('counting')" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center cursor-pointer">
-                            <span class="text-4xl mb-3">📷</span><span class="font-bold text-gray-700 text-center">Counting & Scan</span>
+                        <div onclick="switchTab('counting')" class="bg-white p-6 rounded-xl shadow hover:shadow-md border border-gray-100 flex items-center cursor-pointer transition">
+                            <span class="text-5xl mr-4">📷</span>
+                            <div>
+                                <h3 class="font-bold text-gray-800 text-lg">Scan & Counting</h3>
+                                <p class="text-sm text-gray-500">Stock Opname Barcode</p>
+                            </div>
                         </div>
                     </div>
                 `;
             } 
             else if (tab === 'inventory') {
-                content.innerHTML = '<div class="flex justify-center mt-20"><p class="text-blue-600 font-bold animate-pulse">Memuat data inventory...</p></div>';
-                loadInventoryCache().then(() => {
-                    let html = '<h2 class="text-xl font-bold mb-4">Daftar Inventory</h2>';
-                    inventoryCache.forEach(item => {
-                        html += `
-                            <div class="bg-white p-4 rounded-xl shadow-sm mb-3 border-l-4 border-blue-500 flex justify-between items-center">
-                                <div><h3 class="font-bold text-gray-800">${item.NamaBarang}</h3><p class="text-xs text-gray-500">Kode: ${item.KodeBarang}</p></div>
-                                <div class="text-right"><p class="text-lg font-bold text-green-600">${item.Stok}</p></div>
-                            </div>`;
-                    });
-                    content.innerHTML = html;
-                });
+                renderInventoryPage();
             } 
             else if (tab === 'counting') {
                 if(inventoryCache.length === 0) loadInventoryCache(); 
-
                 content.innerHTML = `
-                    <h2 class="text-xl font-bold mb-4">Counting / Stock Opname</h2>
+                    <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Stock Opname / Counting</h2>
                     
-                    <div class="bg-white p-4 rounded-xl shadow-sm mb-4">
-                        <div id="reader" class="bg-gray-200 rounded-lg flex flex-col items-center justify-center mb-4 text-gray-500 overflow-hidden" style="min-height: 200px">
+                    <div class="bg-white p-5 rounded-xl shadow-sm mb-4 border border-gray-100">
+                        <div id="reader" class="bg-black rounded-lg flex flex-col items-center justify-center mb-4 text-white overflow-hidden shadow-inner" style="min-height: 200px">
                             <span>📷 Area Kamera</span>
                         </div>
-                        <button id="btn-scan" onclick="toggleScanner()" class="w-full bg-green-500 text-white p-3 rounded-lg font-bold mb-4 shadow">Mulai Scan Kamera</button>
+                        <button id="btn-scan" onclick="toggleScanner()" class="w-full bg-green-500 hover:bg-green-600 text-white p-3 rounded-lg font-bold mb-4 shadow transition">Mulai Scan Kamera</button>
                         
-                        <p class="text-sm text-gray-500 mb-2">Atau cari manual (Kode/Nama Barang):</p>
+                        <p class="text-sm text-gray-600 font-medium mb-2">Atau cari manual (Kode/Nama):</p>
                         <div class="flex gap-2">
-                            <input type="text" id="manual-code" placeholder="Ketik kode..." class="flex-1 p-3 border rounded-lg focus:outline-none">
-                            <button onclick="searchManual()" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold shadow">Cari</button>
+                            <input type="text" id="manual-code" placeholder="Ketik kode..." class="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button onclick="searchManual()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow transition">Cari</button>
                         </div>
                     </div>
 
-                    <div class="bg-white p-4 rounded-xl shadow-sm mb-16 border-t-4 border-yellow-400">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="font-bold text-lg">Daftar Sedang Dihitung</h3>
-                            <span id="count-total" class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded">0 Item</span>
+                    <div class="bg-white p-5 rounded-xl shadow-sm mb-16 border-t-4 border-yellow-400">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg text-gray-800">Daftar Hitung</h3>
+                            <span id="count-total" class="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full border border-blue-200">0 Item</span>
                         </div>
                         
-                        <div id="counting-list" class="space-y-3 mb-6">
-                            <p class="text-center text-gray-400 text-sm py-4">Belum ada barang di-scan.</p>
+                        <div id="counting-list" class="space-y-3 mb-6 max-h-80 overflow-y-auto pr-2">
+                            <p class="text-center text-gray-400 text-sm py-8">Belum ada barang di-scan.</p>
                         </div>
 
                         <div class="border-t pt-4 space-y-3">
-                            <button onclick="downloadExcel()" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold flex justify-center items-center gap-2">
+                            <button onclick="downloadExcel()" class="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg font-bold flex justify-center items-center gap-2 transition">
                                 <span>📥</span> Download Excel
                             </button>
-                            <button onclick="saveFinal()" class="w-full bg-blue-700 text-white p-3 rounded-lg font-bold flex justify-center items-center gap-2 shadow-lg">
+                            <button onclick="saveFinal()" class="w-full bg-blue-700 hover:bg-blue-800 text-white p-3 rounded-lg font-bold flex justify-center items-center gap-2 shadow-lg transition">
                                 <span>💾</span> Simpan Final ke Database
                             </button>
                         </div>
@@ -166,35 +243,298 @@
                 renderCountingList();
             } 
             else if (tab === 'settings') {
-                content.innerHTML = `<h2 class="text-xl font-bold mb-4">Pengaturan</h2><button onclick="logout()" class="w-full bg-red-500 text-white p-3 rounded-lg font-bold mt-4">Keluar</button>`;
+                content.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow mt-4">
+                    <h2 class="text-xl font-bold mb-6 text-gray-800">Pengaturan Akun</h2>
+                    <div class="flex items-center gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl">${currentUser.charAt(0).toUpperCase()}</div>
+                        <div>
+                            <p class="text-sm text-gray-500">User Login</p>
+                            <p class="font-bold text-lg text-gray-800">${currentUser}</p>
+                        </div>
+                    </div>
+                    <button onclick="logout()" class="w-full bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg font-bold shadow transition flex items-center justify-center gap-2">
+                        <span>🚪</span> Keluar Aplikasi
+                    </button>
+                </div>`;
             }
         }
 
+        // --- FITUR INVENTORY BARU ---
         async function loadInventoryCache() {
             try {
                 const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'getInventory' }) });
                 const result = await response.json();
-                if (result.status === 'success') inventoryCache = result.data;
+                if (result.status === 'success') {
+                    inventoryCache = result.data;
+                    // Jika sedang di tab inventory, render ulang
+                    const content = document.getElementById('content-area');
+                    if(content.innerHTML.includes('Data Inventaris')) {
+                        renderInventoryList();
+                    }
+                }
             } catch (e) { console.error("Gagal load cache"); }
         }
 
-        // UPDATE KOTAK SCANNER AGAR COCOK UNTUK BARCODE GARIS (1D)
+        function renderInventoryPage() {
+            const content = document.getElementById('content-area');
+            content.innerHTML = `
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3 border-b pb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Data Inventaris</h2>
+                        <p class="text-sm text-gray-500">Kelola master data barang Anda.</p>
+                    </div>
+                    <button onclick="openFormInventory()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 shadow-md transition w-full md:w-auto justify-center">
+                        <span class="text-lg">➕</span> Tambah Barang
+                    </button>
+                </div>
+                
+                <div class="relative mb-4">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">🔍</span>
+                    <input type="text" id="search-inv" onkeyup="filterInventory()" placeholder="Cari kode atau nama barang..." class="w-full pl-10 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                </div>
+
+                <div id="inventory-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-20 md:pb-0">
+                    <div class="col-span-full flex justify-center py-10">
+                        <p class="text-blue-600 font-bold animate-pulse">Memuat data inventory...</p>
+                    </div>
+                </div>
+            `;
+            if(inventoryCache.length > 0) {
+                renderInventoryList();
+            } else {
+                loadInventoryCache().then(renderInventoryList);
+            }
+        }
+
+        function renderInventoryList(data = inventoryCache) {
+            const container = document.getElementById('inventory-grid');
+            if (!container) return;
+
+            if (data.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-10 bg-white rounded-xl border border-dashed"><p class="text-gray-500">Data tidak ditemukan.</p></div>`;
+                return;
+            }
+
+            let html = '';
+            data.forEach((item, index) => {
+                // Handle fallback data jika kolom GS belum lengkap
+                const tahun = item.TahunMasuk || '-';
+                const harga = item.HargaMasuk || 0;
+                const susut = item.HargaPenyusutan || 0;
+                const imgStr = item.Gambar ? `<img src="${item.Gambar}" class="w-16 h-16 object-cover rounded-lg border">` : `<div class="w-16 h-16 bg-gray-100 flex items-center justify-center rounded-lg border text-2xl">📦</div>`;
+
+                html += `
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition">
+                        <div class="p-4 flex gap-4 border-b">
+                            ${imgStr}
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-bold text-gray-800 truncate">${item.NamaBarang}</h3>
+                                <p class="text-xs text-blue-600 font-mono bg-blue-50 inline-block px-1 rounded mt-1">${item.KodeBarang}</p>
+                                <div class="text-xs text-gray-500 mt-1 flex gap-2">
+                                    <span>Stok: <strong class="text-green-600">${item.Stok || 0}</strong></span>
+                                    <span>Thn: <strong>${tahun}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-gray-50 grid grid-cols-4 gap-2 text-center text-xs font-medium">
+                            <button onclick='viewItem(${JSON.stringify(item).replace(/'/g, "&#39;")})' class="flex flex-col items-center text-gray-600 hover:text-blue-600 p-1 rounded hover:bg-blue-50 transition">
+                                <span class="text-lg mb-1">👁️</span> View
+                            </button>
+                            <button onclick='openFormInventory(${index})' class="flex flex-col items-center text-gray-600 hover:text-orange-600 p-1 rounded hover:bg-orange-50 transition">
+                                <span class="text-lg mb-1">✏️</span> Edit
+                            </button>
+                            <button onclick='deleteItem("${item.KodeBarang}")' class="flex flex-col items-center text-gray-600 hover:text-red-600 p-1 rounded hover:bg-red-50 transition">
+                                <span class="text-lg mb-1">🗑️</span> Delete
+                            </button>
+                            <button onclick='shareWA("${item.KodeBarang}", "${item.NamaBarang}")' class="flex flex-col items-center text-gray-600 hover:text-green-600 p-1 rounded hover:bg-green-50 transition">
+                                <span class="text-lg mb-1">📱</span> Share
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function filterInventory() {
+            const val = document.getElementById('search-inv').value.toLowerCase();
+            const filtered = inventoryCache.filter(i => 
+                i.KodeBarang.toLowerCase().includes(val) || 
+                i.NamaBarang.toLowerCase().includes(val)
+            );
+            renderInventoryList(filtered);
+        }
+
+        // --- LOGIC MODAL INVENTORY ---
+        function openFormInventory(index = null) {
+            const modal = document.getElementById('modal-inventory');
+            const title = document.getElementById('modal-title');
+            tempBase64Image = ''; 
+            removeImage(); // Reset preview foto
+
+            if (index !== null) {
+                // EDIT MODE
+                const item = inventoryCache[index];
+                title.innerText = "Edit Barang";
+                document.getElementById('inv-index').value = index;
+                document.getElementById('inv-kode').value = item.KodeBarang;
+                document.getElementById('inv-kode').readOnly = true; // Kode ga boleh diubah
+                document.getElementById('inv-kode').classList.add('bg-gray-100');
+                
+                document.getElementById('inv-nama').value = item.NamaBarang;
+                document.getElementById('inv-stok').value = item.Stok || 0;
+                document.getElementById('inv-tahun').value = item.TahunMasuk || '';
+                document.getElementById('inv-harga').value = item.HargaMasuk || '';
+                document.getElementById('inv-penyusutan').value = item.HargaPenyusutan || '';
+                
+                if(item.Gambar) {
+                    tempBase64Image = item.Gambar;
+                    document.getElementById('inv-preview').src = tempBase64Image;
+                    document.getElementById('preview-container').classList.remove('hidden');
+                }
+            } else {
+                // ADD MODE
+                title.innerText = "Tambah Barang Baru";
+                document.getElementById('inv-index').value = '';
+                document.getElementById('inv-kode').value = '';
+                document.getElementById('inv-kode').readOnly = false;
+                document.getElementById('inv-kode').classList.remove('bg-gray-100');
+                
+                document.getElementById('inv-nama').value = '';
+                document.getElementById('inv-stok').value = '';
+                document.getElementById('inv-tahun').value = new Date().getFullYear();
+                document.getElementById('inv-harga').value = '';
+                document.getElementById('inv-penyusutan').value = '';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        // Convert File Camera to Base64
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                tempBase64Image = e.target.result;
+                document.getElementById('inv-preview').src = tempBase64Image;
+                document.getElementById('preview-container').classList.remove('hidden');
+            }
+            // Compress sikit untuk base64 biar gak berat
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage(e) {
+            if(e) e.stopPropagation();
+            tempBase64Image = '';
+            document.getElementById('inv-foto-input').value = '';
+            document.getElementById('preview-container').classList.add('hidden');
+            document.getElementById('inv-preview').src = '';
+        }
+
+        function saveInventory() {
+            const index = document.getElementById('inv-index').value;
+            const payload = {
+                KodeBarang: document.getElementById('inv-kode').value,
+                NamaBarang: document.getElementById('inv-nama').value,
+                Stok: document.getElementById('inv-stok').value,
+                TahunMasuk: document.getElementById('inv-tahun').value,
+                HargaMasuk: document.getElementById('inv-harga').value,
+                HargaPenyusutan: document.getElementById('inv-penyusutan').value,
+                Gambar: tempBase64Image
+            };
+
+            if(!payload.KodeBarang || !payload.NamaBarang) return alert("Kode dan Nama wajib diisi!");
+
+            // Jika offline/FrontEnd Only (sementara simpan ke Cache lokal, karena butuh update Backend GAS)
+            if(index !== '') {
+                // Update
+                inventoryCache[index] = payload;
+                alert("Berhasil diubah! (Data ini masih tersimpan lokal, pastikan Script Google Anda sudah diperbarui untuk menampung data baru).");
+            } else {
+                // Add
+                const isExist = inventoryCache.find(i => i.KodeBarang == payload.KodeBarang);
+                if(isExist) return alert("Kode Barang sudah ada!");
+                inventoryCache.unshift(payload);
+                alert("Berhasil ditambah! (Data ini masih tersimpan lokal).");
+            }
+            
+            closeModal('modal-inventory');
+            renderInventoryList();
+        }
+
+        function deleteItem(kode) {
+            if(!confirm(`Yakin hapus barang kode: ${kode}?`)) return;
+            inventoryCache = inventoryCache.filter(i => i.KodeBarang != kode);
+            renderInventoryList();
+            alert("Barang dihapus. (Hanya di tampilan, update backend GAS Anda untuk menghapus dari Sheet).");
+        }
+
+        function viewItem(item) {
+            const imgStr = item.Gambar ? `<img src="${item.Gambar}" class="w-full h-48 object-cover rounded-lg mb-4 shadow-sm border">` : `<div class="w-full h-48 bg-gray-100 flex items-center justify-center rounded-lg mb-4 border text-4xl shadow-sm text-gray-400">📷 No Image</div>`;
+            
+            document.getElementById('view-content').innerHTML = `
+                ${imgStr}
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold">Nama Barang</p>
+                        <p class="font-bold text-gray-800 text-lg leading-tight">${item.NamaBarang}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 border-t pt-3 mt-3">
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Kode</p>
+                            <p class="font-mono text-sm font-bold text-blue-600">${item.KodeBarang}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Stok Sistem</p>
+                            <p class="font-bold text-gray-800 text-sm">${item.Stok || 0} Unit</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 uppercase">Tahun Masuk</p>
+                            <p class="font-bold text-gray-800 text-sm">${item.TahunMasuk || '-'}</p>
+                        </div>
+                    </div>
+                    <div class="border-t pt-3 mt-3 bg-gray-50 p-3 rounded-lg border">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-xs text-gray-600 font-semibold">Harga Masuk</span>
+                            <span class="text-sm font-bold text-green-700">${formatRupiah(item.HargaMasuk)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-xs text-gray-600 font-semibold">Harga Susut</span>
+                            <span class="text-sm font-bold text-red-600">${formatRupiah(item.HargaPenyusutan)}</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-view')" class="w-full bg-blue-600 text-white mt-5 p-3 rounded-lg font-bold shadow hover:bg-blue-700 transition">Tutup</button>
+            `;
+            document.getElementById('modal-view').classList.remove('hidden');
+        }
+
+        function shareWA(kode, nama) {
+            const text = `*Info Barang GMP*\n\nKode: ${kode}\nNama: ${nama}\n\nTolong cek barang ini ya.`;
+            const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // --- SCANNER & COUNTING LOGIC (SAMA SEPERTI SEBELUMNYA) ---
         function toggleScanner() {
             const btn = document.getElementById('btn-scan');
             if (html5QrCode && html5QrCode.isScanning) {
                 html5QrCode.stop().then(() => {
                     btn.innerText = "Mulai Scan Kamera";
                     btn.classList.replace('bg-red-500', 'bg-green-500');
+                    btn.classList.replace('hover:bg-red-600', 'hover:bg-green-600');
                 });
             } else {
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 html5QrCode.start(
                     { facingMode: "environment" }, 
-                    { 
-                        fps: 10, 
-                        // KOTAK KITA UBAH JADI PERSEGI PANJANG (250x100) AGAR LEBIH FOKUS KE BARCODE GARIS
-                        qrbox: { width: 250, height: 100 } 
-                    },
+                    { fps: 10, qrbox: { width: 250, height: 100 } },
                     (decodedText) => {
                         processScannedCode(decodedText);
                         if("vibrate" in navigator) navigator.vibrate(200);
@@ -203,6 +543,7 @@
                 ).then(() => {
                     btn.innerText = "Berhenti Scan";
                     btn.classList.replace('bg-green-500', 'bg-red-500');
+                    btn.classList.replace('hover:bg-green-600', 'hover:bg-red-600');
                 }).catch(err => alert("Gagal buka kamera. Izinkan akses kamera browser."));
             }
         }
@@ -213,20 +554,12 @@
             input.value = ''; 
         }
 
-        // UPDATE FUNGSI FILTER URL
         function processScannedCode(kode) {
-            // --- FITUR BARU: AUTO BERSIHKAN URL ---
-            // Jika hasil scan berupa URL (misal: https://toko.com/produk/BRG001)
             if (kode.includes('http')) {
                 const urlParts = kode.split('/');
-                kode = urlParts[urlParts.length - 1]; // Ambil teks paling ujung (BRG001)
-                
-                // Jika ujungnya ada parameter seperti ?id=123, kita bersihkan juga
-                if(kode.includes('?')) {
-                    kode = kode.split('?')[0];
-                }
+                kode = urlParts[urlParts.length - 1]; 
+                if(kode.includes('?')) kode = kode.split('?')[0];
             }
-            // --------------------------------------
 
             const item = inventoryCache.find(i => i.KodeBarang == kode || i.NamaBarang.toLowerCase().includes(kode.toLowerCase()));
             
@@ -255,24 +588,24 @@
             document.getElementById('count-total').innerText = `${countingList.length} Item`;
 
             if(countingList.length === 0) {
-                container.innerHTML = '<p class="text-center text-gray-400 text-sm py-4">Belum ada barang di-scan.</p>';
+                container.innerHTML = '<p class="text-center text-gray-400 text-sm py-8 border border-dashed rounded-lg">Belum ada barang di-scan.</p>';
                 return;
             }
 
             let html = '';
             countingList.forEach((item, index) => {
                 html += `
-                    <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 relative">
-                        <button onclick="removeItem(${index})" class="absolute top-2 right-2 text-red-500 font-bold bg-red-100 rounded-full w-6 h-6 flex justify-center items-center text-xs">X</button>
-                        <div class="pr-8">
-                            <p class="font-bold text-sm text-gray-800">${index + 1}. ${item.NamaBarang}</p>
-                            <p class="text-[10px] text-gray-500 mb-2">Kode: ${item.KodeBarang}</p>
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-200 relative shadow-sm">
+                        <button onclick="removeItem(${index})" class="absolute -top-2 -right-2 text-white font-bold bg-red-500 rounded-full w-7 h-7 flex justify-center items-center text-xs shadow hover:bg-red-600">X</button>
+                        <div class="pr-6">
+                            <p class="font-bold text-sm text-gray-800 line-clamp-1">${index + 1}. ${item.NamaBarang}</p>
+                            <p class="text-xs text-blue-600 font-mono mt-1 mb-3 bg-blue-100 inline-block px-1 rounded">${item.KodeBarang}</p>
                         </div>
-                        <div class="flex justify-between items-center bg-white p-2 border rounded border-gray-100">
-                            <div class="text-xs">Stok Sistem: <span class="font-bold text-gray-700">${item.StokSistem}</span></div>
+                        <div class="flex justify-between items-center bg-white p-2 border rounded-lg shadow-inner">
+                            <div class="text-xs text-gray-500">Sistem: <span class="font-bold text-gray-800 text-sm ml-1">${item.StokSistem}</span></div>
                             <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-blue-600">Aktual:</span>
-                                <input type="number" onchange="updateQty(${index}, this.value)" value="${item.StokAktual}" class="w-16 p-1 border-2 border-blue-400 rounded text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                <span class="text-xs font-bold text-blue-600 bg-blue-50 py-1 px-2 rounded">Aktual:</span>
+                                <input type="number" onchange="updateQty(${index}, this.value)" value="${item.StokAktual}" class="w-16 p-1 border-2 border-blue-400 rounded-lg text-center text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 transition">
                             </div>
                         </div>
                     </div>
@@ -281,24 +614,16 @@
             container.innerHTML = html;
         }
 
-        function updateQty(index, newVal) {
-            countingList[index].StokAktual = Number(newVal);
-        }
-
-        function removeItem(index) {
-            countingList.splice(index, 1);
-            renderCountingList();
-        }
+        function updateQty(index, newVal) { countingList[index].StokAktual = Number(newVal); }
+        function removeItem(index) { countingList.splice(index, 1); renderCountingList(); }
 
         function downloadExcel() {
             if(countingList.length === 0) return alert("Belum ada data!");
-            
             const dataToExport = countingList.map((item, i) => ({
                 "No": i + 1, "Kode Barang": item.KodeBarang, "Nama Barang": item.NamaBarang,
                 "Qty Sistem": item.StokSistem, "Qty Aktual (Hitungan)": item.StokAktual,
                 "Selisih": item.StokAktual - item.StokSistem, "Petugas": currentUser
             }));
-
             const ws = XLSX.utils.json_to_sheet(dataToExport);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Hasil Counting");
@@ -325,9 +650,7 @@
                     countingList = []; 
                     renderCountingList();
                     loadInventoryCache(); 
-                } else {
-                    alert("Gagal: " + result.message);
-                }
+                } else { alert("Gagal: " + result.message); }
             } catch (e) { alert("Error koneksi!"); } 
             finally { btn.innerHTML = "<span>💾</span> Simpan Final ke Database"; btn.disabled = false; }
         }
